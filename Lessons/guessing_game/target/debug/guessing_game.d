@@ -1,1 +1,1 @@
-C:\Users\Dell-Admin\Desktop\Learn-Rust-Language\Lessons\guessing_game\target\debug\guessing_game.exe: C:\Users\Dell-Admin\Desktop\Learn-Rust-Language\Lessons\guessing_game\src\main.rs build.rs
+C:\Users\Dell-Admin\Desktop\LapTrinh-Csharp\Rust_Lang\Learn-Rust-Language\Lessons\guessing_game\target\debug\guessing_game.exe: C:\Users\Dell-Admin\Desktop\LapTrinh-Csharp\Rust_Lang\Learn-Rust-Language\Lessons\guessing_game\src\main.rs build.rs
