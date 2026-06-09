@@ -2,38 +2,236 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Học Code JS Trên Android</title>
-                <style>
-                        /* Thêm tí CSS cho giao diện trên điện thoại nhìn xịn sò nhé */
-                                body {
-                                            font-family: Arial, sans-serif;
-                                                        text-align: center;
-                                                                    padding: 20px;
-                                                                                background-color: #f0f2f5;
-                                                                                        }
-                                                                                                button {
-                                                                                                            padding: 12px 24px;
-                                                                                                                        font-size: 16px;
-                                                                                                                                    background-color: #007bff;
-                                                                                                                                                color: white;
-                                                                                                                                                            border: none;
-                                                                                                                                                                        border-radius: 8px;
-                                                                                                                                                                                    cursor: pointer;
-                                                                                                                                                                                                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                                                                                                                                                                                                        }
-                                                                                                                                                                                                                button:active {
-                                                                                                                                                                                                                            background-color: #0056b3; /* Tạo hiệu ứng khi nhấn trên màn hình cảm ứng */
-                                                                                                                                                                                                                                    }
-                                                                                                                                                                                                                                            #ketQua {
-                                                                                                                                                                                                                                                        margin-top: 20px;
-                                                                                                                                                                                                                                                                    font-size: 18px;
-                                                                                                                                                                                                                                                                                font-weight: bold;
-                                                                                                                                                                                                                                                                                            color: #333;
-                                                                                                                                                                                                                                                                                                    }
-                                                                                                                                                                                                                                                                                                        </style>
-                                                                                                                                                                                                                                                                                                        </head>
-                                                                                                                                                                                                                                                                                                        <body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Rắn Săn Mồi - Android & PC</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #222;
+            color: white;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        h1 {
+            margin: 5px 0;
+            font-size: 24px;
+        }
+        #scoreBoard {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        /* Khung chứa game board */
+        canvas {
+            background-color: #111;
+            border: 4px solid #333;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            max-width: 100%;
+            height: auto;
+        }
+        /* Bộ nút điều khiển dành riêng cho màn hình cảm ứng Android */
+        .controls {
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 70px);
+            grid-template-rows: repeat(3, 70px);
+            gap: 10px;
+        }
+        .btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px #222;
+        }
+        .btn:active {
+            background-color: #666;
+            box-shadow: 0 2px #222;
+            transform: translateY(2px);
+        }
+        #btnUp { grid-column: 2; grid-row: 1; }
+        #btnLeft { grid-column: 1; grid-row: 2; }
+        #btnRight { grid-column: 3; grid-row: 2; }
+        #btnDown { grid-column: 2; grid-row: 3; }
+    </style>
+</head>
+<body>
+
+    <h1>SNAKE GAME 🐍</h1>
+    <div id="scoreBoard">Điểm số: <span id="score">0</span></div>
+
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <div class="controls">
+        <button class="btn" id="btnUp">↑</button>
+        <button class="btn" id="btnLeft">←</button>
+        <button class="btn" id="btnRight">→</button>
+        <button class="btn" id="btnDown">↓</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score");
+
+        // Kích thước mỗi ô vuông trong game (Kích thước lưới)
+        const gridSize = 20; 
+        const tileCount = canvas.width / gridSize;
+
+        // Khởi tạo Rắn ban đầu (nằm ở giữa màn hình)
+        let snake = [
+            { x: 10, y: 10 },
+        ];
+        
+        // Vị trí mồi ban đầu
+        let food = { x: 5, y: 5 };
+
+        // Hướng di chuyển (Mới vào game đứng yên)
+        let dx = 0;
+        let dy = 0;
+
+        let score = 0;
+        let gameInterval;
+
+        // Vòng lặp chính của game (Chạy lại sau mỗi 100 mili-giây)
+        function main() {
+            if (isGameOver()) {
+                alert("Game Over! Điểm của bạn là: " + score);
+                resetGame();
+                return;
+            }
+
+            clearCanvas();
+            drawFood();
+            moveSnake();
+            drawSnake();
+        }
+
+        // 1. Xóa màn hình cũ để vẽ khung hình mới
+        function clearCanvas() {
+            ctx.fillStyle = "#111";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // 2. Vẽ con rắn
+        function drawSnake() {
+            ctx.fillStyle = "#4CAF50"; // Màu xanh cho thân rắn
+            snake.forEach((part, index) => {
+                // Đầu rắn cho màu đậm hơn một chút
+                if(index === 0) ctx.fillStyle = "#2E7D32";
+                else ctx.fillStyle = "#4CAF50";
+
+                ctx.fillRect(part.x * gridSize, part.y * gridSize, gridSize - 2, gridSize - 2);
+            });
+        }
+
+        // 3. Di chuyển rắn
+        function moveSnake() {
+            // Nếu rắn chưa hướng nào thì không di chuyển
+            if (dx === 0 && dy === 0) return;
+
+            // Tạo đầu mới cho rắn dựa trên hướng đi dx, dy
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head); // Thêm đầu mới vào đầu mảng
+
+            // Kiểm tra xem đầu rắn có trùng vị trí thức ăn không
+            const hasEatenFood = snake[0].x === food.x && snake[0].y === food.y;
+            if (hasEatenFood) {
+                score += 10;
+                scoreElement.innerText = score;
+                generateFood(); // Tạo thức ăn mới
+            } else {
+                snake.pop(); // Nếu không ăn, xóa bỏ phần đuôi cũ để giữ nguyên chiều dài
+            }
+        }
+
+        // 4. Vẽ thức ăn (Mồi cục màu đỏ)
+        function drawFood() {
+            ctx.fillStyle = "#FF5252";
+            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
+        }
+
+        // 5. Tạo vị trí ngẫu nhiên cho mồi
+        function generateFood() {
+            food.x = Math.floor(Math.random() * tileCount);
+            food.y = Math.floor(Math.random() * tileCount);
+
+            // Đảm bảo mồi không mọc đè lên thân rắn
+            snake.forEach(part => {
+                const hasContaminated = part.x === food.x && part.y === food.y;
+                if (hasContaminated) generateFood();
+            });
+        }
+
+        // 6. Kiểm tra điều kiện thua game
+        function isGameOver() {
+            // Tông vào tường
+            if (snake[0].x < 0 || snake[0].x >= tileCount || snake[0].y < 0 || snake[0].y >= tileCount) {
+                return true;
+            }
+            // Tự cắn vào thân mình
+            for (let i = 1; i < snake.length; i++) {
+                if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
+            }
+            return false;
+        }
+
+        // 7. Chơi lại từ đầu
+        function resetGame() {
+            snake = [{ x: 10, y: 10 }];
+            food = { x: 5, y: 5 };
+            dx = 0;
+            dy = 0;
+            score = 0;
+            scoreElement.innerText = score;
+        }
+
+        // -----------------------------------------
+        // BỘ ĐIỀU KHIỂN (BÀN PHÍM PC VÀ NÚT BẤM ANDROID)
+        // -----------------------------------------
+        
+        // Hàm đổi hướng di chuyển (Chặn không cho rắn tự quay đầu 180 độ)
+        function changeDirection(direction) {
+            if (direction === "UP" && dy !== 1) { dx = 0; dy = -1; }
+            if (direction === "DOWN" && dy !== -1) { dx = 0; dy = 1; }
+            if (direction === "LEFT" && dx !== 1) { dx = -1; dy = 0; }
+            if (direction === "RIGHT" && dx !== -1) { dx = 1; dy = 0; }
+        }
+
+        // Bắt sự kiện bàn phím trên Máy tính
+        document.addEventListener("keydown", event => {
+            if (event.key === "ArrowUp") changeDirection("UP");
+            if (event.key === "ArrowDown") changeDirection("DOWN");
+            if (event.key === "ArrowLeft") changeDirection("LEFT");
+            if (event.key === "ArrowRight") changeDirection("RIGHT");
+        });
+
+        // Bắt sự kiện nút bấm cảm ứng trên Android
+        document.getElementById("btnUp").addEventListener("click", () => changeDirection("UP"));
+        document.getElementById("btnDown").addEventListener("click", () => changeDirection("DOWN"));
+        document.getElementById("btnLeft").addEventListener("click", () => changeDirection("LEFT"));
+        document.getElementById("btnRight").addEventListener("click", () => changeDirection("RIGHT"));
+
+        // Chạy game với tốc độ 100ms mỗi khung hình
+        gameInterval = setInterval(main, 100);
+    </script>
+</body>
+</html>
 
                                                                                                                                                                                                                                                                                                             <h1>Chào mừng bạn đến với JavaScript!</h1>
                                                                                                                                                                                                                                                                                                                 <p>Bấm vào nút bên dưới để kích hoạt đoạn script:</p>
